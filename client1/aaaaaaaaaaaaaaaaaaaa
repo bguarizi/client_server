@@ -1,0 +1,102 @@
+Lista 1 – parte 3
+
+1)
+
+2)
+Camada 1 – Física: Responsável por transmitir bits através de um canal de comunicação.
+Camada 2 – Enlace: Responsável por detectar e corrigir erros ocorridos na camada física.
+Camada 3 – Rede: Determina como os pacotes serão roteados até o seu destino.
+Camada 4 – Transporte: Responsável por fornecer uma comunicação fim-a-fim, com controle de fkuxo e deteccção e correção de erros.
+Camada 5 – Sessão: Permite que usuários de diferentes máquinas estabeleçam uma sessão; também é responsável pelo controle do diálogo, determinando quem vai transmitir e quando. 
+Camada 6 – Apresentação: Possibilita a comunicação entre computadores com diferentes formas de apresentação dos dados.
+Camada 7 – Aplicação: Possui um monte de aplicações que são importantes ao usuário.
+
+3) A camada de enlace é quem vai transformar um canal de transmissão em uma linha que pareça estar livre de erros; ela impede que o transmissor sobrecarregue o receptor com uma quantidade muito grande de dados, assim dividindo os dados em frames; responsável pelo tratamento de erros e controle de acesso ao meio.
+
+4) Representam elementos que dependem de alguma forma um do outro.
+
+5) Sim, pode variar de acordo com o meio físico.
+
+6) Como a camada física envia um grande fluxo de dados, não é garantido que não ocorram erros nessa transmissão, por isso a camada de enlace (a camada seguinte a física) é responsável por tratar estes erros que podem ou não ocorrer.
+
+7) Há a possibilidade de a máquina que vai transmitir a informação enviar frames mais rapidamente que o receptor, assim fazendo com que ele não consiga recebê-los a tempo podendo perder alguns frames, por isso é importante haver o controle de fluxo na camada de enlace.
+8)  ???????????
+9) A camada de enlace é responsável pelo enquadramento dos dados. Isto é, ela recebe um grande fluxo de informações vindas da camada física (estas informações chegam à camada de enlace em forma de pacotes, a informação não é dividida ou quebrada) e esta camada transforma esse pacote em quadros (frames), quebrando a informação em pequenas partes para serem enviadas ao receptor.
+10) O enquadramento, nada mais é, do que pegar um pacote de informação e transformá-lo em quadros, ou frames, que serão transmitidos ao receptor. Isto é importante para que a informação seja partida em pedaços menores para que possa ser enviada com eficiência pelo canal de comunicação.
+11)
+Contagens de caracter: Indica a quantidade de caracteres do frame em um campo no cabeçalho, com base no número de caracteres será possível saber onde é o início e o fim do frame. Problema: a quantidade/contagem pode ser alterada por causa de um erro durante a transmissão.
+
+Bytes de Flags, com inserção de bytes: Aqui cada frame começa e termina com caracteres especiais (chamados bytes de flag), sendo assim determina-se o início e o fim do frame sem problemas com relação ao tamanho ser adulterado. Problema: Este tipo vai depender do uso de caracteres de 8 bits.
+Flags iniciais e finais, com inserção de Bits: Cada quadro começa e termina com um padrão de bits 01111110 (byte de flag), sempre que encontra cinco 1’s ele insere um 0 logo após. Ex: 01111110. Ficaria: 011111010.
+ 12) A inserção de bytes ocorre no início e no fim de um frame (1 byte = 8 bits). Já a inserção de bits (como detalhado acima), ocorre logo após a ocorrência de cinco 1’s em sequência (no caso, o bit inserido é sempre o 0). 
+13) Existem 3 possibilidades:
+Ele pode não fazer nada, sendo assim nenhuma mensagem é retornada e ele assume que o TCP/IP detectará o erro e pedirá reenvio.
+Ele pode retornar uma mensagem ao transmissor para solicitar que o mesmo reenvie a mensagem para ele.
+Ou, pode corrigir o erro com alguma das técnicas de detecção e correção de erros.
+
+14)
+a) Nesta técnica, o transmissor envia um frame e espera pela confirmação do receptor. Caso seja positiva, envia-se o próximo frame. Caso contrário, reenvia-se o mesmo frame.
+
+b) Aqui, vários frames são enviados simultaneamente, não há a espera pela resposta como no anterior. Depois é que ele recebe estes retornos. E, caso o receptor não aponte o recebimento de algum frame, a mensagem de retorno conterá o número do frame esperado.
+
+15) a detecção de erros é apenas o passo de verificar se ocorreu algum erro dentro daquela informação. A correção é de fato o ato de corrigir aquele erro que foi detectado anteriormente.
+
+16) Erro de bit: apenas 1 bit possui interferência, este é o tipo menos comum. Erro de rajada, 2 ou mais bits são corrompidos, mas não necessariamente são bits consecutivos, este é o mais comum.
+
+17) Ele é medido do primeiro bit corrompido até o último, e pode ser que tenham bits entre entes que não tenham sido corrompidos.
+
+18) Podem ser classificadas em 2 grupos: FEC (Forward Error Correction), aqui se utilizam códigos corretores para fazer a correção no receptor;
+ARQ (Automatic Repeat reQuest), ao identificar um erro ocorrido, é solicitado o reenvio daquele dado/frame.
+O melhor desempenho ocorre quando utilizam-se as duas técnicas juntas.
+
+19) Para que haja de fato a detecção e correção de erro é necessário que sejam inseridos bits extras junto com a informação a ser enviada (este é o conceito de redundância), só assim será possível corrigir bits corrompidos.
+
+20) Esta distância representa o menor número de posições em bits de diferença entre duas palavras. Ou seja, tendo em mente que 2 palavras possuem uma distância de Hamming k, será necessário que ocorram k erros para que uma palavra se transforme na outra.
+21) Para detectar uma certa quantidade de erros (m), é necessário ter um código de distância m+1. Ou seja, para detectar 3 erros, é necessário uma distância de 3 + 1 = 4.
+Agora, para corrigir n erros, é necessário uma distância de 2n+1. Ou seja, com a distância obtida anteriormente, poderemos corrigir: 2n+1 = 4 … n = 3/2 erros.
+
+22) 2n + 1, com n = 3 … 2*3 + 1 = 7. A distância necessária para corrigir 3 erros é igual a 7.
+com uma distância igual a 7, m+1 = 7 … m = 6. Com uma distância de 7, é possível detectar 6 erros.
+
+23) É um bit que adiciona-se ao dado para somar e verificar a paridade, podendo ser ela par ou ímpar.
+
+24) Paridade par: É quando no dado tem-se uma quantidade ímpar de um determinado bit e adiciona-se mais um bit daquele, transformando-o em uma quantidade par. Ex: 10010. Temos uma quantidade ímpar do bit 0. Adicionando outro bit 0, temos 100100, transformando sua quantidade em par.
+Paridade ímpar: Mesmo pensamento, porém tem-se um bit com quantidade par e adiciona-se 1 a mais para ter quantidade ímpar. Ex: 10010. 1 possui quantidade par, então adiciona-se um bit 1. 100101, ficando assim com uma quantidade ímpar.
+
+25) Paridade bidimensional, que é quando acrescenta-se 2 ou mais bits redundantes na informação a ser enviada.
+
+26) CRC é o Código de Redundância Cíclica, ele consiste em tratar a mensagem como um grande número binário, dividi-lo por um número fixo e usar o resto desta divisão como um checksum. Ao receber a mensagem, o receptor pode realizar novamente a divisão e comparar o resto com este checksum.
+
+27) É muito utilizado em enlaces wireless, que são enlaces sujeitos a muitos erros.
+
+
+Lista 1 – parte 4
+
+
+1)  O enlace broadcast consiste na existência de vários nós (receptores e transmissores), que estão conectados no mesmo canal de transmissão.
+
+2) Eles buscam coordenar o acesso ao canal compartilhado, decidir quem trasmite e quem recebe informações e determinar o que será feito quando houver alguma colisão.
+
+3) Quando só houver um nó enviando, sua vazão ser igual a vazão máxima do canal, ser um protocolo simples para que sua implementação seja barata, protocolo ser descentralizado e quando x nós tiverem dados para serem enviados, cada nó ter uma vazão média.
+
+4)
+Protocolos de divisão de canal: ….
+Protocolos de acesso aleatório: ….
+Protocolos de revezamento: ….
+
+
+5) A multiplexação é uma função que transmite 2 ou mais sinais individuais, de forma simultânea, por meio de um único cabo ou via wireless. É uma técnica que abre mais canais de comunicação e amplia a capacidade de transmissão de dados.
+
+6) É a representação para uma parcela da utilização do meio físico alocada a transmissão de um sinal.
+
+7) O FDM requer modulação e filtragem. Os sinais digitais são convertidos em analógicos, fazendo com que seja comum a associação de sistemas de banda larga com sistemas analógicos. Já no TDM, os sinais são transmitidos em banda básica, sendo sinais digitais.
+
+8) Isto é necessário pelo fato de os sinais digitais serem convertidos em sinais analógicos.
+
+9) No TDM síncrono, o multiplexador atribui precisamente o mesmo slot a cada dispositivo, tendo ele algo a ser enviado ou não. No TDM assíncrono, o número de slots em um frame é menor que o número de linhas de dados.
+
+10) Quando acontece uma colisão, o nó espera um tempo aleatório pada poder reenviar o quadro.
+
+11)  No Aloha, os nós podem começar a transmitir no início do intervalo, enquanto no CSMA, o nó ouve primeiro o canal antes de transmitir o frame.
+
+12) No Slotted Aloha, os nós possuem um sincronismo para saber onde iniciam os intervalos, caso haja colisão, ela é detectada antes da conclusão da transmissão. Já no Aloha, os nós não fazem este sincronismo de tempo que acontece no anterior.
