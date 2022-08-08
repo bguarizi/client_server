@@ -13,7 +13,6 @@
 #include <pthread.h>
 #include "biblioteca.h"
 
-// add na estrutura ... ESTE É O PRÓXIMO PASSO
 
 void saveFiles(char * name_c, char * n_file, clients_list *cl){ // Função que adiciona os arquivos recebidos em uma estrutura de dados
 
@@ -73,10 +72,15 @@ void listFiles(int consocket, clients_list *cl) { // Função que lista os clint
         file *aux2 = aux->files;
         
         while(aux2 != NULL){
+            printf("%s\n", aux2->name);
             sendString(aux2->name, consocket);
 
             aux2 = aux2 -> next;
         }
+
+        printf("\n\n");
+
+        printf("FIM LISTAR!\n");
         
         aux = aux->next;
     }
@@ -177,9 +181,13 @@ void findFile(char * nameFile, clients_list *cl, int consocket){
     client * aux = cl->first;
     int count = 0;
 
+    file * auxfl = NULL;
+    file * auxfl1 = NULL;
+
     while(aux != NULL){
 
-        file * auxfl = aux->files;
+        auxfl = aux->files;
+        auxfl1 = NULL;
 
         while(auxfl != NULL){
 
@@ -194,16 +202,39 @@ void findFile(char * nameFile, clients_list *cl, int consocket){
                 //sendStrig(); // ENVI
             }
 
+            auxfl1 = auxfl;
+
             auxfl = auxfl -> next;
 
         }
+
+        if(count == 1)
+            break;
 
         aux = aux->next;
 
     }
 
     if (count == 0) {
+        
         sendInt(0, consocket); // Envia um int para dizer que não achou o arquivo
+
+    } else { // TIRA O ARQUIVO DA LISTA ENCADEADA
+        
+        if (auxfl1 == NULL) { // SE FOR O PRIMEIRO DA LISTA
+            printf("FIRST LISTA AAAAAAAAA\n"); //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+            aux->files = auxfl -> next;
+            free(auxfl);
+        } else {
+            if (auxfl->next != NULL) {
+                printf("file1: %s e file2: %s\n", auxfl1->name, auxfl->next->name);
+            }
+
+            auxfl1->next = auxfl->next;
+            free(auxfl);
+        }
+
+        aux->numFiles--;
     }
 }
 
@@ -235,6 +266,7 @@ void * process_commands(void *recvparametros){
         } else if (command == COMMAND_EXIT){ // EXIT
             char * client = recvString(consocket);
             removeClient(client, cl);
+            printf("REMOVIDO!\n");
             close(consocket);
         } else if (command == COMMAND_DELETE){
 
@@ -243,6 +275,8 @@ void * process_commands(void *recvparametros){
             fileDelete = recvString(consocket);
 
             findFile(fileDelete, cl, consocket);
+
+            // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
 
         }
 
@@ -311,6 +345,8 @@ int main(int argc, char *argv[])
         par->ip = clientIP;
 
         pthread_create( &thread, NULL, process_commands, par);
+
+        //pthread_join(thread, NULL);
         
     }
     

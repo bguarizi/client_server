@@ -34,6 +34,7 @@ typedef struct parametros {
 	clients_list * cl;
 	char * ip;
 	int port;
+	int socket_serv;
 
 } parametros;
 

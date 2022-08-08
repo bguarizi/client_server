@@ -83,7 +83,9 @@ void list(int mysocket){
                 // file *aux2 = aux->files;
                 
                 for (int i = 0; i < numarquivos; i++){
+                        // printf("1\n");
                         recvChar = recvString(mysocket);
+                        // printf("2\n");
                         printf(" %s\n", recvChar);
                         // aux2 = aux2 -> next;
                 }
@@ -203,6 +205,7 @@ void * recvCommands(void * arguments) { // RECEBE COMANDOS DE UM CLIENTE
 
         char * client = par->client;
         int socket_otherclient = par->consocket;
+        int socket_serv = par->socket_serv;
 
         int command = recvInt(socket_otherclient);
 
@@ -225,6 +228,9 @@ void * recvCommands(void * arguments) { // RECEBE COMANDOS DE UM CLIENTE
                         printf("DIRENT IS %s\n", diretorio);
                         remove(diretorio); // REMOVER O ARQUIVO QUE O CLIENTE CONECTADO ME ENVIAR
                         printf("REMOÇÃO DO ARQUIVO %s\n", fileDelete);
+                        
+                        // sendString(fileDelete, socket_serv); // ENVIA O ARQUIVO QUE FOI DELETADO PARA O SERVIDOR GERAL
+                        
                         break;
 
         }
@@ -234,10 +240,10 @@ void * recvCommands(void * arguments) { // RECEBE COMANDOS DE UM CLIENTE
 
 void * initServer(void * arguments){
 
-        struct parametros * par = (struct parametros*) arguments;
+        struct parametros * par1 = (struct parametros*) arguments;
 
-        int port = par->port;
-        char * client = par->client;
+        int port = par1->port;
+        char * client = par1->client;
 
         // int port = *(int*) argument;
 
@@ -283,6 +289,7 @@ void * initServer(void * arguments){
 
                 par->consocket = consocket_serv_client;
                 par->client = client;
+                par->socket_serv = par1->consocket;
 
                 // printf("consocket is %d\n", consocket);
                 // printf("par->consocket is %d\n", par->consocket);
@@ -354,7 +361,7 @@ int main(int argc, char *argv[])
         pthread_create( &thread_serv, NULL, initServer, par); // CRIA A THREAD QUE INICIALIZA O SERVIDOR
 
         pthread_create( &thread_client, NULL, sendCommands, par); // CRIA A THREAD QUE ESPERA POR ALGUMA SOLICITAÇÃO DO CLIENTE
-        
+
         pthread_join( thread_serv, NULL );
         pthread_join( thread_client, NULL );
         

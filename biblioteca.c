@@ -45,19 +45,25 @@ double recvDouble( int socket ){
 }
 
 void sendString( char* string, int socket ){
+
+	int sendBytes = 0;
+
 	int numBytes = sizeof(char) * strlen(string);
 	sendInt(numBytes, socket);
-	send(socket, string, numBytes, 0);
+
+	while((sendBytes += send(socket, string + sendBytes, numBytes - sendBytes, 0)) != numBytes);
 }
 
 char* recvString( int socket ){
+
 	int numBytes;
-	
 	numBytes = recvInt(socket);
 	
 	char* string = (char *)calloc(numBytes+1, sizeof(char));
-	
-	recv(socket, string, numBytes, 0);
+
+	int recvBytes = 0;
+
+	while((recvBytes += recv(socket, string + recvBytes, numBytes - recvBytes, 0)) != numBytes);
 	
 	return string;
 }
