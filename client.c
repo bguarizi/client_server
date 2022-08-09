@@ -10,6 +10,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include "biblioteca.h"
 
 #define MAXRCVLEN 5000
@@ -96,6 +97,48 @@ void list(int mysocket){
 
 }
 
+void sendFile(char * diretorio, int socket){
+
+        FILE * file;
+
+        void * conteudo = (void*) calloc (MAX_COMMAND_LENGHT,sizeof (void));
+
+        printf("SEND FILE\n");
+        printf("diretório: %s\n", diretorio);
+
+        file = fopen(diretorio, "r");
+
+        if (file != NULL) {
+                printf("ABRIU\n");
+                
+                struct stat sb;
+                int numBytesRead = 0;
+
+                stat(diretorio, &sb);
+                printf("TAMANHO ARQUIVO: %ld\n", sb.st_size);
+
+                // while (numBytesRead < sb.st_size)
+                // {
+                        printf("LI AQUI\n");
+                        numBytesRead = fread(conteudo, sizeof(void), MAX_COMMAND_LENGHT,file);
+                        
+                        printf("conteudo lido: %s\n", (char*)conteudo);
+                        printf("numero: %d\n", numBytesRead);
+                
+                // }
+                
+
+                
+                
+
+
+        } else {
+                printf("\n\nAVISO: ARQUIVO NÃO ENCONTRADO!\n\n");
+        }
+
+
+}
+
 void connectClient(int port, char * ip, char * file, int command){
 
         // printf("PORTA %d\n", port);
@@ -122,8 +165,16 @@ void connectClient(int port, char * ip, char * file, int command){
                 return;
         }
 
-        sendInt(command, socket_conClient); // ENVIA O COMANDO DESEJADO PARA O CLIENTE
-        sendString(file, socket_conClient); // ENVIA O NOME DO ARQUIVO A SER REMOVIDO
+        if (command == COMMAND_DELETE) {
+                sendInt(command, socket_conClient); // ENVIA O COMANDO DESEJADO PARA O CLIENTE
+                sendString(file, socket_conClient); // ENVIA O NOME DO ARQUIVO 
+        } else if (command == COMMAND_SEND){
+                sendInt(command, socket_conClient); // ENVIA O COMANDO DESEJADO PARA O CLIENTE
+                // sendString(file, socket_conClient); // ENVIA O NOME DO DIRETÓRIO
+                sendFile(file, socket_conClient);
+        }
+
+        
 
         printf("VOU CONECTAR COM ELE!\n");
         
@@ -141,13 +192,52 @@ void * delet(int consocket, char * fileDelete){
         }
 }
 
+void connectSendFile(int consocket, char * client, char * filesSend){
+
+        printf("CONNECT SEND FILE\n");
+
+        if (recvInt(consocket)){ // CLIENTE ENCONTRADO
+
+                printf("FIND\n");
+
+                char * diretorio = (char*) calloc (MAX_COMMAND_LENGHT,sizeof (char));
+
+                int port = recvInt(consocket);
+                char * ip = recvString(consocket);
+
+                char * c = strtok(filesSend, " ");
+
+                char * file = strtok(NULL, " ");
+
+                printf("MEU FILE: %s\n", file);
+
+                strcat(strcpy(diretorio, "./"), client);
+                strcat(strcat(diretorio, "/"), file);
+
+                printf("MEU DIRETÓRIO: %s\n", diretorio);
+
+                connectClient(port, ip, diretorio, COMMAND_SEND);
+
+                // while (file != NULL){
+                //         file = strtok(NULL, " ");
+                //         connectClient(port, ip, file, COMMAND_SEND);
+                // }
+
+        } else {
+                printf("\n\nAVISO: Cliente Inexistente!\n\n");
+        }
+
+}
+
 void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
 
         struct parametros * par = (struct parametros*) arguments;
         int mysocket = par->consocket;
         char * client = par->client;
 
-        char * fileDelete = (char*) calloc (MAX_COMMAND_LENGHT,sizeof (char));
+        char * filesDelete = (char*) calloc (MAX_COMMAND_LENGHT,sizeof (char));
+        char * fileSendDelete = (char*) calloc (MAX_COMMAND_LENGHT,sizeof (char));
+        char * filesSend = (char*) calloc (MAX_COMMAND_LENGHT,sizeof (char));
 
         while (1) {
 
@@ -159,6 +249,7 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
                 printf(" Para realizar o envio dos arquivos digite 2.\n");
                 printf(" Para sair digite 3.\n");
                 printf(" Para deletar um arquivo digite 4.\n");
+                printf(" Para enviar um arquivo digite 5.\n");
 
 
                 scanf("%d", &command);
@@ -185,15 +276,47 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
                                 break;
                         case COMMAND_DELETE:
                                 system("clear");
-                                sendInt(COMMAND_DELETE, mysocket); // ENVIO DO COMMANDO DE SEND FILES
-                                printf("Digite o arquivo que deseja deletar: \n");
+                                
+                                printf("Digite os arquivos que deseja deletar: \n");
                 
-                                scanf("%s", fileDelete);
- 
-                                sendString(fileDelete, mysocket); // ENVIO DO ARQUIVO A SER DELETADO
+                                scanf("%s", filesDelete);
+                                printf("filesDelete: %s\n\n", filesDelete);
 
-                                delet(mysocket, fileDelete);
+                                char * file1 = strtok(filesDelete, " ");
 
+                                while(file1 != NULL){
+                                        sendInt(COMMAND_DELETE, mysocket); // ENVIO DO COMMANDO DE SEND FILES
+                                        printf("file: %s\n", file1);
+                                        sendString(file1, mysocket); // ENVIO DO ARQUIVO A SER DELETADO
+                                        delet(mysocket, file1);
+                                        file1 = strtok(NULL, " ");
+                                }                                
+
+                                break;
+                        case COMMAND_SEND:
+                                system("clear");
+
+                                printf("Digite o cliente e os arquivos que deseja enviar: \n");
+                
+                                scanf(" %[^\n]", filesSend);
+
+                                char * copy = (char*) calloc (MAX_COMMAND_LENGHT,sizeof (char));
+                                strcpy(copy, filesSend);
+
+                                // fgets(filesSend, 256, stdin);
+                                
+                                printf("filesSend: %s\n\n", filesSend);
+
+                                char * c = strtok(filesSend, " ");
+
+                                /* MANDA PARA O SERVIDOR QUAL O CLIENTE QUE DESEJO ME CONECTAR */
+
+                                sendInt(COMMAND_SEND, mysocket); // ENVIO DO COMMANDO DE SEND
+                                
+                                sendString(c, mysocket); // ENVIO DO NOME DO CLIENTE
+                                
+                                connectSendFile(mysocket, client, copy); 
+                                // printf("2; %d\n", recvInt(mysocket));                         
                                 break;
                 }
         }
@@ -370,7 +493,4 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
 }
 
-
-/* PRÓXIMO PASSO: RETORNAR PARA O SERVIDOR QUE O ARQUIVO FOI EXCLUÍDO
-                APAGAR ARQUIVO DA LISTA ENCADEADA
-*/
+//send f1 123

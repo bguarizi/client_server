@@ -73,7 +73,6 @@ void sendVoid ( void * buffer, int socket, int numBytes){
 	int sendBytes = 0;
 	while((sendBytes += send(socket, buffer + sendBytes, numBytes - sendBytes, 0)) != numBytes);
 
-
 }
 
 void * recvVoid (int socket){

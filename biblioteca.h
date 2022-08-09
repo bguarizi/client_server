@@ -3,6 +3,7 @@
 #define SENDFILENAMELIST 2
 #define COMMAND_EXIT 3
 #define COMMAND_DELETE 4
+#define COMMAND_SEND 5
 
 
 typedef struct file {

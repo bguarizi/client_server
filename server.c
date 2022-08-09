@@ -238,6 +238,42 @@ void findFile(char * nameFile, clients_list *cl, int consocket){
     }
 }
 
+void findClient(char * clientName, clients_list *cl, int consocket){
+
+    printf("FIND CLIENT\n");
+
+    client * aux = cl->first;
+    int count = 0;
+
+    while(aux != NULL){
+
+        printf("cliente: %s\n", aux->name);
+
+        if (strcmp(aux->name, clientName) == 0) {
+            count = 1;
+            printf("ACHEI\n");
+            
+            sendInt(1, consocket); // Envia um int para dizer que achou o cliente
+
+            printf("ENVIANDO IP E PORTA");
+
+            sendInt(aux->port, consocket); // PORTA
+            sendString(aux->ip, consocket); // IP
+
+            break;
+        }
+
+        aux = aux->next;
+
+    }
+
+    if (count == 0) {
+        
+        sendInt(0, consocket); // Envia um int para dizer que não achou o cliente
+
+    } 
+}
+
 void * process_commands(void *recvparametros){
 
     struct parametros * par = (struct parametros*) recvparametros;
@@ -278,6 +314,20 @@ void * process_commands(void *recvparametros){
 
             // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
 
+        } else if (command == COMMAND_SEND){
+
+            printf("SEND RECV\n");
+
+            char * client;
+            
+            client = recvString(consocket);
+
+            printf("client: %s\n", client);
+
+            findClient(client, cl, consocket);
+
+            // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
+
         }
 
     }
@@ -286,6 +336,8 @@ void * process_commands(void *recvparametros){
 
 int main(int argc, char *argv[])
 {
+
+    
 
     if( argc != 2 ){ 
 
