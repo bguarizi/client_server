@@ -274,6 +274,54 @@ void findClient(char * clientName, clients_list *cl, int consocket){
     } 
 }
 
+int buscaFile(char * f, clients_list *cl){
+
+    client * aux_client = cl->first;
+    file * aux_file;
+
+    while(aux_client != NULL) {
+        aux_file = aux_client->files;
+        while (aux_file != NULL) {
+            
+            if (strcmp(aux_file->name, f) == 0){
+                return 1;
+            }
+
+            aux_file = aux_file -> next;
+        }
+        aux_client = aux_client->next;
+    }
+    
+}
+
+void addFile(char * c, char * f, clients_list *cl){
+
+    int i = buscaFile(f, cl);
+
+    if (i == 1) {
+        
+        client * aux_client = cl->first;
+        // file * aux_file;
+
+        while(aux_client != NULL) {
+            if (strcmp(aux_client->name, c) == 0){
+                file * new = (file*) calloc (1,sizeof (file));
+                new->name = f;
+                new->next = aux_client->files;
+                aux_client->files = new;
+                
+                aux_client->numFiles = aux_client->numFiles += 1;
+
+                break;
+            }
+            aux_client = aux_client->next;
+        }
+
+    }
+
+
+}
+
 void * process_commands(void *recvparametros){
 
     struct parametros * par = (struct parametros*) recvparametros;
@@ -325,6 +373,10 @@ void * process_commands(void *recvparametros){
             printf("client: %s\n", client);
 
             findClient(client, cl, consocket);
+
+            char * recvFile = recvString(consocket);
+
+            addFile(client, recvFile, cl);
 
             // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
 
