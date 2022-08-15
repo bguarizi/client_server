@@ -338,16 +338,19 @@ void * process_commands(void *recvparametros){
 
         if (command == COMMAND_LIST){ // LISTAR
 
+            printf("\n\n\n AAAAAAAAAAA LISTAR \n\n\n\n");
+
             listFiles(consocket, cl);
 
         } else if (command == COMMAND_STATS){ //STATS
-
+            printf("\n\n\n AAAAAAAAAAA STATUS \n\n\n\n");
         } else if (command == SENDFILENAMELIST){ // SENDFILES
-            
+            printf("\n\n\n AAAAAAAAAAA SEND FILES \n\n\n\n");
             recvFiles(consocket, cl, par->ip, count);
             count = 1;
 
         } else if (command == COMMAND_EXIT){ // EXIT
+            printf("\n\n\n AAAAAAAAAAA EXIT \n\n\n\n");
             char * client = recvString(consocket);
             removeClient(client, cl);
             printf("REMOVIDO!\n");
@@ -374,9 +377,17 @@ void * process_commands(void *recvparametros){
 
             findClient(client, cl, consocket);
 
-            char * recvFile = recvString(consocket);
+            char * recvFile = recvString(consocket); 
+            
+            while (strcmp(recvFile, "NN") != 0) {
+                addFile(client, recvFile, cl);
+                recvFile = recvString(consocket); 
+            }
+            
 
-            addFile(client, recvFile, cl);
+            
+
+            
 
             // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
 

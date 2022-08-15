@@ -1,9 +1,9 @@
 #define COMMAND_LIST 0
 #define COMMAND_STATS 1
 #define SENDFILENAMELIST 2
-#define COMMAND_EXIT 3
-#define COMMAND_DELETE 4
-#define COMMAND_SEND 5
+#define COMMAND_EXIT 5
+#define COMMAND_DELETE 3
+#define COMMAND_SEND 4
 
 
 typedef struct file {
@@ -36,6 +36,7 @@ typedef struct parametros {
 	char * ip;
 	int port;
 	int socket_serv;
+	char * c;
 
 } parametros;
 
