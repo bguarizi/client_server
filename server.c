@@ -2,6 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -72,15 +73,15 @@ void listFiles(int consocket, clients_list *cl) { // Função que lista os clint
         file *aux2 = aux->files;
         
         while(aux2 != NULL){
-            printf("%s\n", aux2->name);
+            // printf("%s\n", aux2->name);
             sendString(aux2->name, consocket);
 
             aux2 = aux2 -> next;
         }
 
-        printf("\n\n");
+        // printf("\n\n");
 
-        printf("FIM LISTAR!\n");
+        // printf("FIM LISTAR!\n");
         
         aux = aux->next;
     }
@@ -222,14 +223,11 @@ void findFile(char * nameFile, clients_list *cl, int consocket){
     } else { // TIRA O ARQUIVO DA LISTA ENCADEADA
         
         if (auxfl1 == NULL) { // SE FOR O PRIMEIRO DA LISTA
-            printf("FIRST LISTA AAAAAAAAA\n"); //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+            
             aux->files = auxfl -> next;
             free(auxfl);
         } else {
-            if (auxfl->next != NULL) {
-                printf("file1: %s e file2: %s\n", auxfl1->name, auxfl->next->name);
-            }
-
+  
             auxfl1->next = auxfl->next;
             free(auxfl);
         }
@@ -240,22 +238,15 @@ void findFile(char * nameFile, clients_list *cl, int consocket){
 
 void findClient(char * clientName, clients_list *cl, int consocket){
 
-    printf("FIND CLIENT\n");
-
     client * aux = cl->first;
     int count = 0;
 
     while(aux != NULL){
 
-        printf("cliente: %s\n", aux->name);
-
         if (strcmp(aux->name, clientName) == 0) {
             count = 1;
-            printf("ACHEI\n");
-            
-            sendInt(1, consocket); // Envia um int para dizer que achou o cliente
 
-            printf("ENVIANDO IP E PORTA");
+            sendInt(1, consocket); // Envia um int para dizer que achou o cliente
 
             sendInt(aux->port, consocket); // PORTA
             sendString(aux->ip, consocket); // IP
@@ -322,6 +313,70 @@ void addFile(char * c, char * f, clients_list *cl){
 
 }
 
+void status(clients_list *cl, int socket){
+
+    // printf("socket %d\n", socket);
+    
+    int count = 0;
+
+    client * auxT = cl->first;
+    client * aux = cl->first;
+
+    while (auxT != NULL){
+
+        count++;
+
+        auxT = auxT->next;
+    }
+
+    sendInt(count, socket);
+
+    while (aux != NULL){
+
+        // printf("> %s: %d arquivos enviados\n", aux->name, aux->numFiles);
+        sendString(aux->name, socket);
+        sendInt(aux->numFiles, socket);
+
+        aux = aux->next;
+    }
+
+    struct tm *data_hora_atual;
+
+    //variável do tipo time_t para armazenar o tempo em segundos  
+    time_t segundos;
+    
+    //obtendo o tempo em segundos  
+    time(&segundos);   
+    
+    //para converter de segundos para o tempo local  
+    //utilizamos a função localtime  
+    data_hora_atual = localtime(&segundos);  
+
+    // printf("\nDia..........: %d\n", data_hora_atual->tm_mday);  
+
+    sendInt(data_hora_atual->tm_mday, socket);
+  
+    // //para retornar o mês corretamente devemos adicionar +1 
+    // //como vemos abaixo
+    // printf("\nMes..........: %d\n", data_hora_atual->tm_mon+1);
+
+     sendInt(data_hora_atual->tm_mon+1, socket);
+    
+    // //para retornar o ano corretamente devemos adicionar 1900 
+    // //como vemos abaixo
+    // printf("\nAno..........: %d\n\n", data_hora_atual->tm_year+1900);
+    
+    sendInt(data_hora_atual->tm_year+1900, socket);
+
+    // printf("\nHora ........: %d:",data_hora_atual->tm_hour);//hora   
+    sendInt(data_hora_atual->tm_hour, socket);
+    // printf("%d:",data_hora_atual->tm_min);//minuto
+    sendInt(data_hora_atual->tm_min, socket);
+    // printf("%d\n",data_hora_atual->tm_sec);//segundo  
+    sendInt(data_hora_atual->tm_sec, socket);
+
+}
+
 void * process_commands(void *recvparametros){
 
     struct parametros * par = (struct parametros*) recvparametros;
@@ -338,22 +393,19 @@ void * process_commands(void *recvparametros){
 
         if (command == COMMAND_LIST){ // LISTAR
 
-            printf("\n\n\n AAAAAAAAAAA LISTAR \n\n\n\n");
-
             listFiles(consocket, cl);
 
         } else if (command == COMMAND_STATS){ //STATS
-            printf("\n\n\n AAAAAAAAAAA STATUS \n\n\n\n");
+            // printf("socketaa %d\n", consocket);
+            status(cl, consocket);
         } else if (command == SENDFILENAMELIST){ // SENDFILES
-            printf("\n\n\n AAAAAAAAAAA SEND FILES \n\n\n\n");
+
             recvFiles(consocket, cl, par->ip, count);
             count = 1;
 
         } else if (command == COMMAND_EXIT){ // EXIT
-            printf("\n\n\n AAAAAAAAAAA EXIT \n\n\n\n");
             char * client = recvString(consocket);
             removeClient(client, cl);
-            printf("REMOVIDO!\n");
             close(consocket);
         } else if (command == COMMAND_DELETE){
 
@@ -366,14 +418,9 @@ void * process_commands(void *recvparametros){
             // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
 
         } else if (command == COMMAND_SEND){
-
-            printf("SEND RECV\n");
-
             char * client;
             
             client = recvString(consocket);
-
-            printf("client: %s\n", client);
 
             findClient(client, cl, consocket);
 
@@ -383,14 +430,29 @@ void * process_commands(void *recvparametros){
                 addFile(client, recvFile, cl);
                 recvFile = recvString(consocket); 
             }
-            
-
-            
-
-            
-
             // printf("FILE NAME DELETED IS %s\n", recvString(consocket));
 
+        }
+
+        else if (command == COMMAND_RECV){
+
+            char * client, *client2;
+            
+            client = recvString(consocket);
+
+            client2 = recvString(consocket);
+
+            // printf("CLIENT2 %s\n", client2);
+
+            findClient(client, cl, consocket);
+
+            char * recvFile = recvString(consocket); 
+            
+            while (strcmp(recvFile, "NN") != 0) {
+                addFile(client2, recvFile, cl);
+                recvFile = recvString(consocket); 
+            }
+ 
         }
 
     }
@@ -404,7 +466,7 @@ int main(int argc, char *argv[])
 
     if( argc != 2 ){ 
 
-        printf("USAGE: server port_number\n");
+        // printf("USAGE: server port_number\n");
 
         return EXIT_FAILURE;
 

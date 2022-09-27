@@ -16,10 +16,12 @@
 #define MAXRCVLEN 5000
 #define MAX_LENGHT 5000 
 
+int globalCommand = -1;
+
 void sendFilesName(int mysocket, char* client){
 
         int num = countFiles(client);
-        //printf("NUMERO DE ARQUIVOS: %d\n", num);
+
         sendInt(num, mysocket);
 
         sendString(client, mysocket); //ENVIA NOME CLIENTE
@@ -62,34 +64,19 @@ void sendFilesName(int mysocket, char* client){
 
 void list(int mysocket){
         
-        printf("NÃO ENVIEI COMANDO PRO SERV\n");
-
         sendInt(COMMAND_LIST, mysocket);
 
-        // void * v = recvVoid(mysocket);
-        //printf("end V: %p\n", v);
-        //char * aloha = (char*) v;
-        //printf("aloha is: %s\n", aloha);
-
-        printf("ENVIEI COMANDO PRO SERV\n");
-
         int numClients = recvInt(mysocket); // QUANTIDADE DE CLIENTES
-
-        printf("RECEBI NUMCLIENTS PRO SERV: %d\n", numClients);
 
         char * recvChar;
 
         for (int i = 0; i < numClients; i++){
 
-                
-
                 recvChar = recvString(mysocket); // NOME DO CLIENTE
-
-                printf("RECEBI CLIENT PRO SERV: %s\n", recvChar);
 
                 int numarquivos = recvInt(mysocket);
 
-                printf("%s:\n", recvChar);
+                printf("\n---> %s:\n\n", recvChar);
                 
                 // file *aux2 = aux->files;
                 
@@ -97,7 +84,7 @@ void list(int mysocket){
                         // printf("1\n");
                         recvChar = recvString(mysocket);
                         // printf("2\n");
-                        printf(" %s\n", recvChar);
+                        printf("> '%s'\n", recvChar);
                         // aux2 = aux2 -> next;
                 }
 
@@ -107,18 +94,50 @@ void list(int mysocket){
 
 }
 
+void status(int socket){
+
+        // printf("socket %d\n", socket);
+
+        int quantClients = recvInt(socket);
+
+        printf("O servidor possui %d clientes conectados\n\n", quantClients);
+
+        for (int i = 0; i < quantClients; i++){
+                char * c = recvString(socket);
+                int i = recvInt(socket);
+
+                printf("> %s - Possui %d arquivos.\n", c, i);
+        }
+
+        int ano = recvInt(socket);
+        int mes = recvInt(socket);
+        int dia = recvInt(socket);
+
+        printf("\nData de hoje ........: %d/%d/%d \n", ano, mes, dia);  
+  
+        // //para retornar o mês corretamente devemos adicionar +1 
+        // //como vemos abaixo
+        // printf("\nMes..........: %d\n", );
+        
+        // //para retornar o ano corretamente devemos adicionar 1900 
+        // //como vemos abaixo
+        // printf("\nAno..........: %d\n\n", recvInt(socket));  
+
+        printf("Hora ........: %d:",recvInt(socket));//hora   
+        printf("%d:",recvInt(socket));//minuto
+        printf("%d\n",recvInt(socket));//segundo 
+
+        puts("");
+
+}
+
 void sendFile(char * diretorio, char * client_send, int socket){
 
         FILE * file;
 
         file = fopen(diretorio, "r");
-    
-        printf("ABRIU\n");
 
         void * conteudo = (void*) calloc (MAX_LENGHT,sizeof (void));
-
-        printf("SEND FILE\n");
-        printf("diretório: %s\n", diretorio);
 
         int count = 0;
 
@@ -136,14 +155,10 @@ void sendFile(char * diretorio, char * client_send, int socket){
                 }
         }
 
-        printf("NAME FILE: %s\n", name_file);
-
         char * newFile = (char*) calloc (MAX_LENGHT,sizeof (char));
 
         strcat(strcpy(newFile, "./"), client_send);
         strcat(strcat(newFile, "/"), name_file);
-
-        printf("MEU DIRETÓRIO: %s\n", newFile);
 
         sendString(newFile, socket); // ENVIA O NOME DO ARQUIVO
         
@@ -153,19 +168,17 @@ void sendFile(char * diretorio, char * client_send, int socket){
         int numBytesTotal = 0;
 
         stat(diretorio, &sb);
-        printf("TAMANHO ARQUIVO: %ld\n", sb.st_size);
+
+        // printf("TAMANHO ARQUIVO: %ld\n", sb.st_size);
 
         sendInt(sb.st_size, socket);
 
         while (numBytesTotal < sb.st_size)
         {
-                printf("LI AQUI\n");
-                numBytesRead = fread(conteudo, sizeof(void), MAX_LENGHT,file);
 
+                numBytesRead = fread(conteudo, sizeof(void), MAX_LENGHT,file);
+              
                 numBytesTotal += numBytesRead;
-                
-                printf("conteudo lido: %s\n", (char*)conteudo);
-                printf("numero: %d\n", numBytesRead);
 
                 sendInt(numBytesRead, socket); //ENVIA O NÚMERO DE BYTES LIDO
 
@@ -173,12 +186,16 @@ void sendFile(char * diretorio, char * client_send, int socket){
 
         
         }
-  
-
-
 }
 
-void recvFile(char * name_file, int socket){
+void * recvFileSend(void * arguments){
+
+        struct parametros * par = (struct parametros*) arguments;
+
+        int socket = par->consocket;
+        char * name_file = par->client;
+
+        name_file = recvString(socket);
 
         FILE * f;
 
@@ -209,6 +226,124 @@ void recvFile(char * name_file, int socket){
  
         }    
 
+}
+
+void recvFile(int socket){
+
+        char * name_file = (char*) calloc (MAX_LENGHT,sizeof (char));
+        char * dirent = (char*) calloc (MAX_LENGHT,sizeof (char));
+        name_file = recvString(socket);
+        dirent = recvString(socket);
+
+        int find = recvInt(socket);
+
+        if (find) {
+
+                FILE * f;
+
+                f = fopen(name_file, "w+");
+
+                int numTotalBytes = recvInt(socket);
+
+                int numRecvBytes = 0;
+
+                while (numRecvBytes < numTotalBytes)
+                {
+                        int numBytes = recvInt(socket);
+        
+                        void * conteudo = recvVoid(socket);
+
+                        int bytes = fwrite(conteudo, sizeof(void), numBytes, f);
+
+                        fflush(f);
+
+                        numRecvBytes += bytes;
+
+                }    
+
+        } else {
+                printf("\n\nAVISO: ARQUIVO NO PATH %s NÃO ENCONTRADO!\n", dirent);
+        }
+
+        printf("FIM DO RECV FILE EM %s\n",dirent);
+
+        
+
+}
+
+void * sendFileRecv(void * arguments){
+
+        struct parametros * par = (struct parametros*) arguments;
+
+        int socket = par->consocket;
+        char * diretorio = par->client;
+        char * client_send = par->c;
+    
+        FILE * file;
+
+        file = fopen(diretorio, "r");
+
+        void * conteudo = (void*) calloc (MAX_LENGHT,sizeof (void));
+
+        int count = 0;
+
+        char * name_file = (char*) calloc (MAX_LENGHT,sizeof (char));
+
+        for (int i = 0; i < strlen(diretorio); i++){
+                if (diretorio[i] == '/' && count != 0){
+                        for (int j = i+1; j < strlen(diretorio); j++){
+                                name_file[count-1] = diretorio[j];
+                                count++;
+                        }
+                        break;
+                } else if (diretorio[i] == '/') {
+                        count = 1;
+                }
+        }
+
+        char * newFile = (char*) calloc (MAX_LENGHT,sizeof (char));
+
+          
+        strcat(strcpy(newFile, "./"), client_send);
+        strcat(strcat(newFile, "/"), name_file);
+
+        sendString(newFile, socket); // ENVIA O NOME DO ARQUIVO
+        sendString(diretorio, socket); // ENVIA O NOME DO ARQUIVO
+        
+
+        if (file != NULL) {
+
+                sendInt(1, socket);
+
+                struct stat sb;
+                int numBytesRead = 0;
+
+                int numBytesTotal = 0;
+
+                stat(diretorio, &sb);
+                // printf("TAMANHO ARQUIVO: %ld\n", sb.st_size);
+
+                sendInt(sb.st_size, socket);
+
+                while (numBytesTotal < sb.st_size)
+                {
+                        numBytesRead = fread(conteudo, sizeof(void), MAX_LENGHT,file);
+                        // printf("FILE LIDO: %s\n", newFile);
+                        numBytesTotal += numBytesRead;
+                        
+                        sendInt(numBytesRead, socket); //ENVIA O NÚMERO DE BYTES LIDO
+
+                        sendVoid(conteudo, socket, numBytesRead);
+
+                
+                }
+
+        } else {
+                sendInt(0, socket);
+
+        }
+
+        
 }
 
 void * connectClient(void * arguments){
@@ -254,11 +389,21 @@ void * connectClient(void * arguments){
                 sendFile(file, client_sr, socket_conClient);
         
                         
+        } else if (command == COMMAND_RECV){
+
+                sendInt(command, socket_conClient); // ENVIA O COMANDO DESEJADO PARA O CLIENTE
+
+                sendString(client_sr, socket_conClient); //envia cliente que quer receber arquivos
+                sendString(file, socket_conClient); //envia path que quer receber arquivos
+
+                // printf(":::::%s\n", file);
+
+                recvFile(socket_conClient);
+     
         }
 
-        
+        close(socket_conClient);
 
-        printf("VOU CONECTAR COM ELE!\n");
         
 }
 
@@ -279,17 +424,13 @@ void * delet(int consocket, char * fileUse){
 
                 connectClient(par);
         } else {
-                printf("\n\nAVISO: Arquivo Inexistente!\n\n");
+                printf("\nAVISO: Arquivo %s Inexistente!\n", fileUse);
         }
 }
 
 void connectSendFile(int consocket, char * client, char * filesSend){
 
-        printf("CONNECT SEND FILE\n");
-
         if (recvInt(consocket)){ // CLIENTE ENCONTRADO
-
-                printf("FIND\n");
 
                 char * diretorio = (char*) calloc (MAX_LENGHT,sizeof (char));
 
@@ -302,12 +443,8 @@ void connectSendFile(int consocket, char * client, char * filesSend){
 
                 while(file != NULL){
 
-                        printf("MEU FILE: %s\n", file);
-
                         strcat(strcpy(diretorio, "./"), client);
                         strcat(strcat(diretorio, "/"), file);
-
-                        printf("MEU DIRETÓRIO: %s\n", diretorio);
 
                         sendString(file, consocket);
 
@@ -318,23 +455,72 @@ void connectSendFile(int consocket, char * client, char * filesSend){
                         if (fi != NULL) {
                                 fclose(fi);
 
+                                printf("\n\nARQUIVO '%s' SENDO ENVIADO!\n\n", file);
+
                                 pthread_t thread; // inicializar uma nova thread
 
                                 parametros * par = (parametros*) calloc (1,sizeof (parametros));
 
                                 par->port = port;
                                 par->ip = ip;
-                                par->client = diretorio;
+                                par->client = (char*) calloc(100, sizeof(char));
+                                strcpy(par->client, diretorio);
                                 par->consocket = COMMAND_SEND;
                                 par->c = c;
             
                                 pthread_create( &thread, NULL, connectClient, par);
                                 // connectClient(par);
-                                pthread_join( thread, NULL );
+                                // pthread_join( thread, NULL );
 
                         } else {
-                                printf("\n\nAVISO: ARQUIVO NÃO ENCONTRADO!\n\n");
+                                printf("\n\nAVISO: ARQUIVO '%s' NÃO ENCONTRADO!\n\n", file);
                         }
+                        
+                        file = strtok(NULL, " ");
+
+                }
+
+                sendString("NN", consocket);
+   
+        } else {
+                printf("\n\nAVISO: Cliente Inexistente!\n\n");
+        }
+
+}
+
+void connectRecvFile(int consocket, char * client, char * filesSend){
+
+        if (recvInt(consocket)){ // CLIENTE ENCONTRADO
+
+                char * diretorio = (char*) calloc (MAX_LENGHT,sizeof (char));
+
+                int port = recvInt(consocket);
+                char * ip = recvString(consocket);
+
+                char * c = strtok(filesSend, " ");
+
+                char * file = strtok(NULL, " ");
+
+                while(file != NULL){
+
+                        strcat(strcpy(diretorio, "./"), c);
+                        strcat(strcat(diretorio, "/"), file);
+
+                        sendString(file, consocket);
+
+   
+                        pthread_t thread; // inicializar uma nova thread
+
+                        parametros * par = (parametros*) calloc (1,sizeof (parametros));
+
+                        par->port = port;
+                        par->ip = ip;
+                        par->client = (char*) calloc(100, sizeof(char));
+                        strcpy(par->client, diretorio);
+                        par->consocket = COMMAND_RECV;
+                        par->c = client;
+        
+                        pthread_create( &thread, NULL, connectClient, par);
                         
                         file = strtok(NULL, " ");
 
@@ -357,18 +543,20 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
         char * filesDelete = (char*) calloc (MAX_LENGHT,sizeof (char));
         char * fileSendDelete = (char*) calloc (MAX_LENGHT,sizeof (char));
         char * filesSend = (char*) calloc (MAX_LENGHT,sizeof (char));
+        char * filesRecv = (char*) calloc (MAX_LENGHT,sizeof (char));
+        char * copy = (char*) calloc (MAX_LENGHT,sizeof (char));
 
         while (1) {
 
                 int command;
 
-                printf("Digite o comando desejado: \n");
-                printf(" Para listar os clientes e arquivos digite 0.\n");
-                printf(" Para visualizar o status do servidor digite 1.\n");
-                // printf(" Para realizar o envio dos arquivos digite 2.\n");
-                printf(" Para deletar um arquivo digite 3.\n");
-                printf(" Para enviar um arquivo digite 4.\n");
-                printf(" Para sair digite 5.\n");
+                printf("\nDigite o comando desejado: \n");
+                printf(" Para LISTAR os clientes e arquivos digite 0.\n");
+                printf(" Para visualizar o STATUS do servidor digite 1.\n");
+                printf(" Para RECEBER arquivos digite 2.\n");
+                printf(" Para DELETAR um arquivo digite 3.\n");
+                printf(" Para ENVIAR arquivos digite 4.\n");
+                printf(" Para SAIR digite 5.\n");
 
 
                 scanf("%d", &command);
@@ -380,6 +568,9 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
                                 break;
                         case COMMAND_STATS:
                                 system("clear");
+                                sendInt(COMMAND_STATS, mysocket); // ENVIO DO COMMANDO DE STATUS
+                                // printf("socket antes statss %d\n", mysocket);
+                                status(mysocket);
                                 break;
                         case SENDFILENAMELIST:
                                 sendInt(SENDFILENAMELIST, mysocket); // ENVIO DO COMMANDO DE SEND FILES
@@ -391,6 +582,8 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
                                 sendInt(COMMAND_EXIT, mysocket); // ENVIO DO COMMANDO DE EXIT
                                 sendString(client, mysocket);
                                 close(mysocket);
+                                // printf("consocket do serv int %d", consocket_serv_client);
+                                // close(consocket_serv_client);
                                 return EXIT_SUCCESS;
                                 break;
                         case COMMAND_DELETE:
@@ -399,13 +592,12 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
                                 printf("Digite os arquivos que deseja deletar: \n");
                 
                                 scanf(" %[^\n]", filesDelete);
-                                printf("filesDelete: %s\n\n", filesDelete);
 
                                 char * file1 = strtok(filesDelete, " ");
 
                                 while(file1 != NULL){
                                         sendInt(COMMAND_DELETE, mysocket); // ENVIO DO COMMANDO DE DELETE FILES
-                                        printf("file: %s\n", file1);
+                                        // printf("file: %s\n", file1);
                                         sendString(file1, mysocket); // ENVIO DO ARQUIVO A SER DELETADO
                                         delet(mysocket, file1);
                                         file1 = strtok(NULL, " ");
@@ -424,7 +616,7 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
 
                                 // fgets(filesSend, 256, stdin);
                                 
-                                printf("filesSend: %s\n\n", filesSend);
+                                // printf("filesSend: %s\n\n", filesSend);
 
                                 char * c = strtok(filesSend, " ");
 
@@ -436,8 +628,35 @@ void * sendCommands(void * arguments){ // ENVIA COMANDOS AO SERVIDOR GERAL
                                 
                                 connectSendFile(mysocket, client, copy); 
                                 // printf("2; %d\n", recvInt(mysocket)); 
-                                printf("TERMINEI O SEND\n");                        
+                                printf("FIM DO SEND\n");                        
                                 break;
+                        case COMMAND_RECV:
+                                system("clear");
+
+                                printf("Digite o cliente e os arquivos que deseja receber: \n");
+                
+                                scanf(" %[^\n]", filesRecv);
+
+                                char * copy2 = (char*) calloc (MAX_LENGHT,sizeof (char));
+                                strcpy(copy2, filesRecv);
+
+                                printf("RECEBENDO ARQUIVOS ...\n");  
+
+                                // printf("filesRecv: %s\n\n", filesRecv);
+
+                                char * c2 = strtok(filesRecv, " ");
+
+                                /* MANDA PARA O SERVIDOR QUAL O CLIENTE QUE DESEJO ME CONECTAR */
+
+                                sendInt(COMMAND_RECV, mysocket); // ENVIO DO COMMANDO DE RECV
+                                
+                                sendString(c2, mysocket); // ENVIO DO NOME DO CLIENTE
+                                sendString(client, mysocket); // ENVIO DO NOME DO CLIENTE QUE VAI RECEBER O ARQUIVO
+                                
+                                connectRecvFile(mysocket, client, copy2); 
+                                // printf("2; %d\n", recvInt(mysocket));       
+                                break;
+
                 }
         }
 }
@@ -451,38 +670,61 @@ void * recvCommands(void * arguments) { // RECEBE COMANDOS DE UM CLIENTE
         int socket_serv = par->socket_serv;
 
         int command = recvInt(socket_otherclient);
-
-        printf("COMMAND: %d\n", command);
-
         char * fileUse = (char*) calloc (MAX_LENGHT,sizeof (char));
+        char * clientSend = (char*) calloc (MAX_LENGHT,sizeof (char));
 
         switch(command){
 
                 case COMMAND_DELETE:
                         fileUse = recvString(socket_otherclient);
 
-                        printf("REMOÇÃO DO ARQUIVO %s\n", fileUse);
-                        
                         char * diretorio = (char*) calloc (MAX_LENGHT,sizeof (char));
                         strcat(strcpy(diretorio, "./"), client);
 
                         strcat(strcat(diretorio, "/"), fileUse);
-                        
-                        printf("DIRENT IS %s\n", diretorio);
+
                         remove(diretorio); // REMOVER O ARQUIVO QUE O CLIENTE CONECTADO ME ENVIAR
-                        printf("REMOÇÃO DO ARQUIVO %s\n", fileUse);
-                        
+
+                        printf("ARQUIVO %s REMOVIDO\n", diretorio);
+
                         // sendString(fileUse, socket_serv); // ENVIA O ARQUIVO QUE FOI DELETADO PARA O SERVIDOR GERAL
                         
                         break;
                 case COMMAND_SEND:
-                        fileUse = recvString(socket_otherclient);
-                        recvFile(fileUse, socket_otherclient);
-                        printf("\n\n\n FIM DO SEND \n\n\n\n");
+                        puts("");
+                        
+                        parametros * par = (parametros*) calloc (1,sizeof (parametros));
+
+                        par->consocket = socket_otherclient;
+                        par->client = fileUse;
+
+                        pthread_t thread; // inicializar uma nova thread
+
+
+                        pthread_create( &thread, NULL, recvFileSend, par);
+
+                        // fileUse = recvString(socket_otherclient);
+                        // recvFileSend(fileUse, socket_otherclient);
+
                         break;
 
-                case COMMAND_LIST:
-                        printf("\n\n\n AAAAAAAAAAA PUTA QUE PARIU \n\n\n\n");
+                case COMMAND_RECV:
+    
+                        clientSend = recvString(socket_otherclient);
+                        fileUse = recvString(socket_otherclient);
+ 
+                        pthread_t threadR; // inicializar uma nova thread
+
+                        parametros * par2 = (parametros*) calloc (1,sizeof (parametros));
+
+                        par2->consocket = socket_otherclient;
+                        par2->client = fileUse;
+                        par2->c = clientSend;
+
+                        pthread_create( &threadR, NULL, sendFileRecv, par2);
+
+
+                        // sendFileRecv(fileUse, clientSend, socket_otherclient);
                         break;
         }
 
@@ -520,18 +762,16 @@ void * initServer(void * arguments){
         /* start listening, allowing a queue of up to 1 pending connection */
         listen(mysocket, 1);
 
+        int consocket_serv_client;
 
         printf("Server is waiting for connections on port:%d\n", port );
-
-        int consocket_serv_client;
 
         while (1){
                 
                 // ESPERANDO POR UMA CONEXÃO
                 consocket_serv_client = accept(mysocket, (struct sockaddr *)&dest, &socksize);
+                // printf("connection socket:%d\n", consocket_serv_client );
                 
-                printf("SE CONECTOU COMIGOOOOO!!!!\n");
-
                 // int * con = &consocket_serv_client;
         
                 pthread_t thread; // inicializar uma nova thread
@@ -541,9 +781,6 @@ void * initServer(void * arguments){
                 par->consocket = consocket_serv_client;
                 par->client = client;
                 par->socket_serv = par1->consocket;
-
-                // printf("consocket is %d\n", consocket);
-                // printf("par->consocket is %d\n", par->consocket);
 
                 pthread_create( &thread, NULL, recvCommands, par);
                 
